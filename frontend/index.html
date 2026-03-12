@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeuralNautic Transcriptor</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:       #001428;
+      --navy-light: #002040;
+      --navy-card:  rgba(0, 20, 40, 0.85);
+      --cyan:       #00ffff;
+      --cyan-dark:  #00cccc;
+      --gold:       #ffd700;
+      --gold-dark:  #ccac00;
+      --text:       #f0f8ff;
+      --text-muted: #a0b4c8;
+      --silence:    #ff6b35;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--navy);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── Neural Network Canvas ── */
+    #neural-bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Layout ── */
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.2rem 2rem;
+      border-bottom: 1px solid rgba(0, 255, 255, 0.15);
+      background: rgba(0, 10, 25, 0.7);
+      backdrop-filter: blur(10px);
+    }
+
+    .logo-star {
+      width: 44px;
+      height: 44px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .logo-star svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 8px rgba(0,255,255,0.6));
+    }
+
+    .brand h1 {
+      font-size: 1.4rem;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      color: var(--cyan);
+      text-shadow: 0 0 15px rgba(0,255,255,0.4);
+    }
+
+    .brand span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* ── Main ── */
+    main {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Drop Zone ── */
+    .drop-zone {
+      border: 2px dashed rgba(0,255,255,0.3);
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(0, 30, 60, 0.4);
+      backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(0,255,255,0.03) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--cyan);
+      background: rgba(0, 50, 80, 0.5);
+      box-shadow: 0 0 30px rgba(0,255,255,0.15), inset 0 0 30px rgba(0,255,255,0.05);
+    }
+
+    .drop-zone .icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      filter: drop-shadow(0 0 10px rgba(0,255,255,0.5));
+    }
+
+    .drop-zone h2 {
+      font-size: 1.3rem;
+      font-weight: 300;
+      color: var(--cyan);
+      margin-bottom: 0.5rem;
+    }
+
+    .drop-zone p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .drop-zone input[type="file"] {
+      display: none;
+    }
+
+    .btn-upload {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 0.7rem 2rem;
+      background: linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,200,200,0.1));
+      border: 1px solid var(--cyan-dark);
+      border-radius: 8px;
+      color: var(--cyan);
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .btn-upload:hover {
+      background: rgba(0,255,255,0.2);
+      box-shadow: 0 0 15px rgba(0,255,255,0.2);
+    }
+
+    /* ── Progress Panel ── */
+    .progress-panel {
+      display: none;
+      margin-top: 2rem;
+      background: var(--navy-card);
+      border: 1px solid rgba(0,255,255,0.15);
+      border-radius: 16px;
+      padding: 2rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .progress-panel.visible { display: block; }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-header h3 {
+      color: var(--cyan);
+      font-weight: 300;
+      font-size: 1.1rem;
+    }
+
+    .progress-pct {
+      color: var(--gold);
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .progress-bar-bg {
+      height: 6px;
+      background: rgba(0,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+      border-radius: 3px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 10px rgba(0,255,255,0.4);
+      width: 0%;
+    }
+
+    .steps {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: all 0.3s;
+    }
+
+    .step.active {
+      color: var(--cyan);
+      border-color: var(--cyan-dark);
+      background: rgba(0,255,255,0.08);
+      box-shadow: 0 0 10px rgba(0,255,255,0.1);
+    }
+
+    .step.done {
+      color: var(--gold);
+      border-color: rgba(255,215,0,0.3);
+    }
+
+    .step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .step.active .step-dot {
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.4); }
+    }
+
+    /* ── Results ── */
+    .results {
+      display: none;
+      margin-top: 2rem;
+    }
+
+    .results.visible { display: block; }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .results-header h2 {
+      color: var(--cyan);
+      font-weight: 300;
+      font-size: 1.3rem;
+    }
+
+    .export-buttons {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-export {
+      padding: 0.5rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      border: 1px solid;
+      letter-spacing: 0.03em;
+    }
+
+    .btn-html  { color: #61dafb; border-color: rgba(97,218,251,0.4); background: rgba(97,218,251,0.08); }
+    .btn-md    { color: #c792ea; border-color: rgba(199,146,234,0.4); background: rgba(199,146,234,0.08); }
+    .btn-pdf   { color: var(--gold); border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.08); }
+    .btn-docx  { color: #56b6c2; border-color: rgba(86,182,194,0.4); background: rgba(86,182,194,0.08); }
+
+    .btn-export:hover {
+      filter: brightness(1.2);
+      box-shadow: 0 0 12px rgba(255,255,255,0.1);
+    }
+
+    /* ── Transcript ── */
+    .transcript-container {
+      background: var(--navy-card);
+      border: 1px solid rgba(0,255,255,0.12);
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+      max-height: 65vh;
+      overflow-y: auto;
+    }
+
+    .transcript-container::-webkit-scrollbar { width: 6px; }
+    .transcript-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+    .transcript-container::-webkit-scrollbar-thumb { background: rgba(0,255,255,0.2); border-radius: 3px; }
+
+    .segment {
+      display: flex;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 10px;
+      align-items: flex-start;
+      transition: background 0.2s;
+    }
+
+    .segment:hover { background: rgba(0,255,255,0.04); }
+
+    .segment.speech {
+      border-left: 3px solid rgba(0,204,204,0.5);
+      background: rgba(0,20,40,0.6);
+    }
+
+    .segment.silence {
+      border-left: 3px solid var(--silence);
+      background: rgba(40,10,0,0.5);
+    }
+
+    .seg-time {
+      color: var(--cyan-dark);
+      font-size: 0.78rem;
+      white-space: nowrap;
+      min-width: 70px;
+      padding-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .seg-content { flex: 1; }
+
+    .seg-text {
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .segment.silence .seg-text {
+      color: var(--silence);
+      font-style: italic;
+      font-size: 0.88rem;
+    }
+
+    .seg-slide {
+      margin-top: 0.6rem;
+    }
+
+    .seg-slide img {
+      max-width: 220px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,204,204,0.25);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .seg-slide img:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px rgba(0,255,255,0.2);
+      transform: scale(1.02);
+    }
+
+    /* ── Stats ── */
+    .stats {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      flex: 1;
+      min-width: 120px;
+      background: rgba(0,20,40,0.6);
+      border: 1px solid rgba(0,255,255,0.12);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--cyan);
+      text-shadow: 0 0 10px rgba(0,255,255,0.3);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 0.2rem;
+    }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox.open { display: flex; }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 10px;
+      border: 1px solid var(--cyan-dark);
+      box-shadow: 0 0 40px rgba(0,255,255,0.2);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      color: var(--text);
+      font-size: 2rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      main { padding: 1rem; }
+      .steps { gap: 0.5rem; }
+      .step { font-size: 0.7rem; padding: 0.3rem 0.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="neural-bg"></canvas>
+
+<div class="app">
+  <header>
+    <div class="logo-star">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#c0c8d0"/>
+            <stop offset="50%" style="stop-color:#e8eef4"/>
+            <stop offset="100%" style="stop-color:#8090a0"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,5 55,45 95,50 55,55 50,95 45,55 5,50 45,45"
+                 fill="url(#starGrad)" stroke="rgba(0,255,255,0.3)" stroke-width="0.5"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <h1>NeuralNautic</h1>
+      <span>Transcriptor</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Drop Zone -->
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="icon">🎬</div>
+      <h2>Screenrecording hochladen</h2>
+      <p>MP4-Datei hier ablegen oder klicken zum Auswählen</p>
+      <p style="margin-top:0.5rem;font-size:0.8rem;color:rgba(160,180,200,0.6)">Whisper · FFmpeg · OpenCV — 100% lokal</p>
+      <button class="btn-upload">Datei auswählen</button>
+      <input type="file" id="fileInput" accept="video/mp4,video/*">
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-panel" id="progressPanel">
+      <div class="progress-header">
+        <h3 id="progressTitle">Verarbeite...</h3>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <p style="margin-top:0.8rem;font-size:0.85rem;color:var(--text-muted)" id="progressMsg"></p>
+      <div class="steps">
+        <div class="step" id="step-audio"><span class="step-dot"></span>Audio</div>
+        <div class="step" id="step-silence"><span class="step-dot"></span>Stille</div>
+        <div class="step" id="step-slides"><span class="step-dot"></span>Folien</div>
+        <div class="step" id="step-transcribe"><span class="step-dot"></span>Transkription</div>
+        <div class="step" id="step-export"><span class="step-dot"></span>Export</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+      <div class="results-header">
+        <h2>Transkript</h2>
+        <div class="export-buttons" id="exportButtons"></div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="transcript-container" id="transcriptContainer"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>
+// ── Neural Network Background ────────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('neural-bg');
+  const ctx = canvas.getContext('2d');
+  let nodes = [];
+  let W, H;
+  const NODE_COUNT = 60;
+  const MAX_DIST = 160;
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function initNodes() {
+    nodes = [];
+    for (let i = 0; i < NODE_COUNT; i++) {
+      nodes.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        r: Math.random() * 2 + 1,
+        pulse: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  // Signal-Animationen auf Verbindungen
+  let signals = [];
+  function spawnSignal() {
+    if (signals.length > 12) return;
+    const a = Math.floor(Math.random() * nodes.length);
+    const b = Math.floor(Math.random() * nodes.length);
+    const dx = nodes[b].x - nodes[a].x;
+    const dy = nodes[b].y - nodes[a].y;
+    if (Math.hypot(dx, dy) < MAX_DIST) {
+      signals.push({ from: a, to: b, t: 0, speed: 0.008 + Math.random() * 0.012 });
+    }
+  }
+
+  function draw(ts) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Verbindungen
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < MAX_DIST) {
+          const alpha = (1 - dist / MAX_DIST) * 0.18;
+          ctx.strokeStyle = `rgba(0,200,200,${alpha})`;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Signale
+    signals = signals.filter(sig => sig.t <= 1);
+    for (const sig of signals) {
+      const a = nodes[sig.from], b = nodes[sig.to];
+      const sx = a.x + (b.x - a.x) * sig.t;
+      const sy = a.y + (b.y - a.y) * sig.t;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,255,255,${0.8 * (1 - Math.abs(sig.t - 0.5) * 2)})`;
+      ctx.fill();
+      sig.t += sig.speed;
+    }
+
+    // Neuronen
+    for (const n of nodes) {
+      n.pulse += 0.02;
+      const glow = 0.4 + 0.3 * Math.sin(n.pulse);
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r + 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,220,220,${glow})`;
+      ctx.fill();
+
+      // Bewegen
+      n.x += n.vx;
+      n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+    }
+
+    if (Math.random() < 0.04) spawnSignal();
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  initNodes();
+  requestAnimationFrame(draw);
+  window.addEventListener('resize', () => { resize(); initNodes(); });
+})();
+
+
+// ── Upload & Processing ──────────────────────────────────────────────────────
+let currentJobId = null;
+let pollInterval = null;
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+// Drag & Drop
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+});
+
+async function uploadFile(file) {
+  document.getElementById('progressPanel').classList.add('visible');
+  document.getElementById('results').classList.remove('visible');
+  setProgress(5, 'Lade hoch...', 'start');
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    currentJobId = data.job_id;
+    startPolling();
+  } catch (e) {
+    setProgress(0, 'Fehler beim Upload: ' + e.message, 'error');
+  }
+}
+
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(pollStatus, 1500);
+}
+
+async function pollStatus() {
+  if (!currentJobId) return;
+  try {
+    const res = await fetch(`/status/${currentJobId}`);
+    const job = await res.json();
+    setProgress(job.progress, job.message, job.step);
+    if (job.status === 'done') {
+      clearInterval(pollInterval);
+      showResults(job.data);
+    } else if (job.status === 'error') {
+      clearInterval(pollInterval);
+      document.getElementById('progressTitle').textContent = '❌ Fehler';
+      document.getElementById('progressMsg').textContent = job.message;
+    }
+  } catch(e) {}
+}
+
+const STEP_ORDER = ['audio', 'silence', 'slides', 'transcribe', 'export'];
+
+function setProgress(pct, msg, step) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressMsg').textContent = msg || '';
+
+  STEP_ORDER.forEach(s => {
+    const el = document.getElementById('step-' + s);
+    if (!el) return;
+    el.classList.remove('active', 'done');
+    const idx = STEP_ORDER.indexOf(s);
+    const curIdx = STEP_ORDER.indexOf(step);
+    if (idx < curIdx) el.classList.add('done');
+    else if (idx === curIdx) el.classList.add('active');
+  });
+}
+
+function showResults(data) {
+  document.getElementById('progressTitle').textContent = '✓ Abgeschlossen';
+
+  const results = document.getElementById('results');
+  results.classList.add('visible');
+
+  // Stats
+  const speechSegs = data.segments.filter(s => s.type === 'speech').length;
+  const silenceSegs = data.segments.filter(s => s.type === 'silence').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${speechSegs}</div>
+      <div class="stat-label">Segmente</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--silence)">${silenceSegs}</div>
+      <div class="stat-label">Stille</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="color:var(--gold)">${data.slides.length}</div>
+      <div class="stat-label">Folien</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" style="font-size:1.2rem">${data.language?.toUpperCase() || '?'}</div>
+      <div class="stat-label">Sprache</div>
+    </div>
+  `;
+
+  // Export Buttons
+  const formats = [
+    { key: 'html', label: 'HTML', cls: 'btn-html' },
+    { key: 'md',   label: 'Markdown', cls: 'btn-md' },
+    { key: 'pdf',  label: 'PDF', cls: 'btn-pdf' },
+    { key: 'docx', label: 'Word', cls: 'btn-docx' },
+  ];
+  document.getElementById('exportButtons').innerHTML = formats.map(f =>
+    `<a class="btn-export ${f.cls}" href="/download/${currentJobId}/${f.key}" download>⬇ ${f.label}</a>`
+  ).join('');
+
+  // Transcript
+  const container = document.getElementById('transcriptContainer');
+  container.innerHTML = data.segments.map(seg => {
+    const slideHtml = seg.slide
+      ? `<div class="seg-slide"><img src="/slides/${currentJobId}/${seg.slide}" loading="lazy" onclick="openLightbox(this.src)" alt="Folie @ ${seg.start_fmt}"></div>`
+      : '';
+
+    if (seg.type === 'silence') {
+      return `<div class="segment silence">
+        <span class="seg-time">${seg.start_fmt}–${seg.end_fmt}</span>
+        <div class="seg-content"><span class="seg-text">⚠ ${seg.text}</span>${slideHtml}</div>
+      </div>`;
+    }
+    return `<div class="segment speech">
+      <span class="seg-time">[${seg.start_fmt}]</span>
+      <div class="seg-content"><span class="seg-text">${seg.text}</span>${slideHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Lightbox ─────────────────────────────────────────────────────────────────
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+</script>
+</body>
+</html>

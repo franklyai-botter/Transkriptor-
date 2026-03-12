@@ -1,0 +1,9 @@
+transcriptor_jobs/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.wav
+*.mp4
+*.avi
+*.mkv
