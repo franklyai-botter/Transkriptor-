@@ -820,9 +820,9 @@
         <select id="modelSelect" class="model-select">
           <option value="tiny">tiny — am schnellsten, grob</option>
           <option value="base">base — schnell</option>
-          <option value="small" selected>small — ausgewogen (Standard)</option>
+          <option value="small">small — ausgewogen</option>
           <option value="medium">medium — genauer, langsamer</option>
-          <option value="large">large — beste Qualität, am langsamsten</option>
+          <option value="large" selected>large — beste Qualität, am langsamsten (Standard)</option>
         </select>
       </div>
       <div class="drop-target" id="dropTarget" onclick="document.getElementById('fileInput').click()">
@@ -982,7 +982,7 @@ let currentJobId = null;
 let pollInterval = null;
 let pollFailCount = 0;
 let uploadMode = 'full';   // 'full' | 'text_only'
-let whisperModel = 'small';  // tiny | base | small | medium | large
+let whisperModel = 'large';  // tiny | base | small | medium | large
 (function setupModelSelect() {
   const sel = document.getElementById('modelSelect');
   if (!sel) return;

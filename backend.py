@@ -61,7 +61,7 @@ jobs: dict = {}
 # Whisper Modelle (lazy geladen). Es bleibt immer nur EIN Modell im RAM —
 # beim Wechsel wird neu geladen (nach dem ersten Download aus dem Disk-Cache, schnell).
 ALLOWED_WHISPER_MODELS = ("tiny", "base", "small", "medium", "large")
-DEFAULT_WHISPER_MODEL = "small"
+DEFAULT_WHISPER_MODEL = "large"
 _whisper_cache = {"name": None, "model": None}
 
 def get_whisper_model(model_name: str = DEFAULT_WHISPER_MODEL):
