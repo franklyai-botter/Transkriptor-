@@ -58,14 +58,21 @@ WORK_DIR.mkdir(exist_ok=True)
 # Jobs status speichern
 jobs: dict = {}
 
-# Whisper Modell (wird lazy geladen)
-_whisper_model = None
+# Whisper Modelle (lazy geladen). Es bleibt immer nur EIN Modell im RAM —
+# beim Wechsel wird neu geladen (nach dem ersten Download aus dem Disk-Cache, schnell).
+ALLOWED_WHISPER_MODELS = ("tiny", "base", "small", "medium", "large")
+DEFAULT_WHISPER_MODEL = "small"
+_whisper_cache = {"name": None, "model": None}
 
-def get_whisper_model():
-    global _whisper_model
-    if _whisper_model is None:
-        _whisper_model = whisper.load_model("small")
-    return _whisper_model
+def get_whisper_model(model_name: str = DEFAULT_WHISPER_MODEL):
+    if model_name not in ALLOWED_WHISPER_MODELS:
+        model_name = DEFAULT_WHISPER_MODEL
+    if _whisper_cache["name"] != model_name:
+        print(f"[Whisper] Lade Modell: {model_name} (erster Download kann dauern)", flush=True)
+        _whisper_cache["model"] = whisper.load_model(model_name)
+        _whisper_cache["name"] = model_name
+        print(f"[Whisper] Modell geladen: {model_name}", flush=True)
+    return _whisper_cache["model"]
 
 
 # ── Audio Extraktion ──────────────────────────────────────────────────────────
@@ -256,6 +263,7 @@ def analyze_frame(image_path: Path) -> dict:
                 ]
             }]
         )
+        print(f"[Vision] Frame analysiert mit Modell: {message.model}", flush=True)
     except anthropic.AuthenticationError:
         # API-Key ungueltig -> Job-Loop signalisieren dass Vision unbrauchbar ist
         raise VisionAuthError("Anthropic API-Key ungueltig (401)")
@@ -272,10 +280,10 @@ def analyze_frame(image_path: Path) -> dict:
 
 # ── Transkription ─────────────────────────────────────────────────────────────
 
-def transcribe_audio(audio_path: Path) -> dict:
+def transcribe_audio(audio_path: Path, model_name: str = DEFAULT_WHISPER_MODEL) -> dict:
     """Transkribiert Audio mit Whisper — lädt WAV direkt als numpy array (kein ffmpeg nötig)"""
     import wave, struct
-    model = get_whisper_model()
+    model = get_whisper_model(model_name)
 
     # WAV direkt einlesen → numpy array (umgeht Whispers internen ffmpeg-Aufruf)
     with wave.open(str(audio_path), 'rb') as wf:
@@ -695,6 +703,7 @@ def run_job(job_id: str, video_path: Path):
     job_dir.mkdir(exist_ok=True)
     slides_dir = job_dir / "slides"
     mode = jobs.get(job_id, {}).get("mode", "full")  # 'full' | 'text_only'
+    whisper_model = jobs.get(job_id, {}).get("whisper_model", DEFAULT_WHISPER_MODEL)
 
     def cancelled() -> bool:
         return jobs.get(job_id, {}).get("status") == "cancelled"
@@ -768,11 +777,11 @@ def run_job(job_id: str, video_path: Path):
 
         # ── Q3 (Whisper) ────────────────────────────────────────────────
         whisper_msg = (
-            f"Whisper laeuft... ({len(slides)} Folien)"
-            if slides else "Whisper laeuft..."
+            f"Whisper ({whisper_model}) laeuft... ({len(slides)} Folien)"
+            if slides else f"Whisper ({whisper_model}) laeuft..."
         )
         update("transcribe", transcribe_start_pct, whisper_msg)
-        whisper_result = transcribe_audio(audio_path)
+        whisper_result = transcribe_audio(audio_path, whisper_model)
         update("transcribe", transcribe_end_pct, "Transkription abgeschlossen.")
 
         # ── Q4 (Export) ─────────────────────────────────────────────────
@@ -810,11 +819,15 @@ async def upload_video(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     mode: str = Form("full"),
+    whisper_model: str = Form(DEFAULT_WHISPER_MODEL),
 ):
     """mode = 'full' (Audio+Stille+Folien+Vision+Whisper+Export)
-       mode = 'text_only' (Audio+Stille+Whisper+Export — Folien-Scan uebersprungen)"""
+       mode = 'text_only' (Audio+Stille+Whisper+Export — Folien-Scan uebersprungen)
+       whisper_model = tiny | base | small | medium | large"""
     if mode not in ("full", "text_only"):
         mode = "full"
+    if whisper_model not in ALLOWED_WHISPER_MODELS:
+        whisper_model = DEFAULT_WHISPER_MODEL
 
     job_id = str(uuid.uuid4())[:8]
     job_dir = WORK_DIR / job_id
@@ -829,6 +842,7 @@ async def upload_video(
         "id": job_id,
         "filename": file.filename,
         "mode": mode,
+        "whisper_model": whisper_model,
         "status": "running",
         "step": "start",
         "progress": 0,
@@ -837,7 +851,7 @@ async def upload_video(
     }
 
     background_tasks.add_task(run_job, job_id, video_path)
-    return {"job_id": job_id, "mode": mode}
+    return {"job_id": job_id, "mode": mode, "whisper_model": whisper_model}
 
 
 @app.get("/status/{job_id}")

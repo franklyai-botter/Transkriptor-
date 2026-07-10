@@ -248,6 +248,45 @@
       box-shadow: 0 0 14px rgba(63, 212, 224, 0.18);
     }
 
+    /* Whisper-Modell-Auswahl */
+    .model-select-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      margin: 0 auto 1.6rem auto;
+      position: relative;
+      z-index: 2;
+    }
+    .model-select-row label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--silver-mid);
+    }
+    .model-select {
+      padding: 0.45rem 0.8rem;
+      background: rgba(10, 32, 40, 0.7);
+      border: 1px solid var(--border-2);
+      border-radius: 6px;
+      color: var(--silver-white);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 200ms cubic-bezier(.22,.61,.36,1);
+    }
+    .model-select:hover, .model-select:focus {
+      border-color: var(--glow-cyan);
+      color: var(--glow-cyan);
+      outline: none;
+      box-shadow: 0 0 14px rgba(63, 212, 224, 0.18);
+    }
+    .model-select option {
+      background: #0a2028;
+      color: var(--silver-white);
+    }
+
     .drop-zone .drop-target {
       cursor: pointer;
     }
@@ -776,6 +815,16 @@
         <button type="button" class="mode-btn active" data-mode="full" role="tab" aria-selected="true">Mit Folien</button>
         <button type="button" class="mode-btn" data-mode="text_only" role="tab" aria-selected="false">Nur Text</button>
       </div>
+      <div class="model-select-row">
+        <label for="modelSelect">Whisper-Modell</label>
+        <select id="modelSelect" class="model-select">
+          <option value="tiny">tiny — am schnellsten, grob</option>
+          <option value="base">base — schnell</option>
+          <option value="small" selected>small — ausgewogen (Standard)</option>
+          <option value="medium">medium — genauer, langsamer</option>
+          <option value="large">large — beste Qualität, am langsamsten</option>
+        </select>
+      </div>
       <div class="drop-target" id="dropTarget" onclick="document.getElementById('fileInput').click()">
         <div class="icon"><img class="drop-icon" src="/logo-monogram.png" alt=""></div>
         <h2 id="dropTitle">Screenrecording hochladen</h2>
@@ -933,6 +982,14 @@ let currentJobId = null;
 let pollInterval = null;
 let pollFailCount = 0;
 let uploadMode = 'full';   // 'full' | 'text_only'
+let whisperModel = 'small';  // tiny | base | small | medium | large
+(function setupModelSelect() {
+  const sel = document.getElementById('modelSelect');
+  if (!sel) return;
+  whisperModel = sel.value;
+  sel.addEventListener('change', () => { whisperModel = sel.value; });
+  sel.addEventListener('click', (e) => e.stopPropagation());
+})();
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
@@ -1051,6 +1108,7 @@ async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('mode', uploadMode);
+  formData.append('whisper_model', whisperModel);
   xhr.send(formData);
 
   // merken, damit Cancel den Upload kappen kann
