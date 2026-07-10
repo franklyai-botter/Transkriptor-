@@ -4,38 +4,96 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NeuralNautic Transcriptor</title>
+  <link rel="icon" href="/logo-star.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Italiana&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ── NeuralNautic Design System ── */
     :root {
-      --navy:       #001428;
-      --navy-light: #002040;
-      --navy-card:  rgba(0, 20, 40, 0.85);
-      --cyan:       #00ffff;
-      --cyan-dark:  #00cccc;
-      --gold:       #ffd700;
-      --gold-dark:  #ccac00;
-      --text:       #f0f8ff;
-      --text-muted: #a0b4c8;
-      --silence:    #ff6b35;
+      --ink-abyss:      #061419;
+      --ink-deep:       #0A2028;
+      --ink-tide:       #0E2B36;
+      --ink-current:    #123844;
+      --ink-shoal:      #1A4E5E;
+
+      --glow-faint:     #2D8A9A;
+      --glow-cyan:      #3FD4E0;
+      --glow-aqua:      #6FEFF5;
+      --glow-mist:      #B8F5F9;
+
+      --silver-mid:     #9C9CA4;
+      --silver-bright:  #CDCED2;
+      --silver-white:   #F5F5F2;
+
+      --signal-ok:      #6FEFC7;
+      --signal-warn:    #F5C97A;
+      --signal-alert:   #F08A7A;
+
+      --navy:           var(--ink-deep);
+      --navy-light:     var(--ink-tide);
+      --navy-card:      rgba(14, 43, 54, 0.78);
+      --cyan:           var(--glow-cyan);
+      --cyan-dark:      var(--glow-faint);
+      --gold:           var(--signal-warn);
+      --gold-dark:      #d8a850;
+      --text:           var(--silver-white);
+      --text-muted:     var(--silver-bright);
+      --silence:        var(--signal-alert);
+
+      --border-1:       rgba(205, 206, 210, 0.10);
+      --border-2:       rgba(205, 206, 210, 0.18);
+      --border-3:       rgba(63, 212, 224, 0.30);
+      --glow-accent:    0 0 24px rgba(63, 212, 224, 0.35), 0 0 6px rgba(63, 212, 224, 0.6);
+
+      --font-display:   'Italiana', serif;
+      --font-body:      'Inter', system-ui, sans-serif;
+      --font-mono:      'JetBrains Mono', monospace;
     }
 
     html, body {
       height: 100%;
-      background: var(--navy);
+      background: var(--ink-deep);
       color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
 
-    /* ── Neural Network Canvas ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url('/bg-neural-network.png');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.18;
+      z-index: 0;
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 30% 40%, transparent 20%, rgba(6,20,25,0.85) 75%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Neural Network Canvas (Overlay über bg-image, dezent) ── */
     #neural-bg {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
       z-index: 0;
       pointer-events: none;
+      opacity: 0.35;
+      mix-blend-mode: screen;
     }
 
     /* ── Layout ── */
@@ -49,40 +107,48 @@
 
     /* ── Header ── */
     header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
       display: flex;
       align-items: center;
-      gap: 1rem;
-      padding: 1.2rem 2rem;
-      border-bottom: 1px solid rgba(0, 255, 255, 0.15);
-      background: rgba(0, 10, 25, 0.7);
-      backdrop-filter: blur(10px);
+      gap: 0.85rem;
+      padding: 0 24px;
+      height: 72px;
+      border-bottom: 1px solid var(--border-1);
+      background: rgba(10, 32, 40, 0.78);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .logo-star {
-      width: 44px;
-      height: 44px;
+      width: 48px;
+      height: 48px;
       position: relative;
       flex-shrink: 0;
     }
 
-    .logo-star svg {
+    .logo-star img {
       width: 100%;
       height: 100%;
-      filter: drop-shadow(0 0 8px rgba(0,255,255,0.6));
+      object-fit: contain;
+      filter: drop-shadow(0 4px 18px rgba(63,212,224,0.45));
     }
 
     .brand h1 {
-      font-size: 1.4rem;
-      font-weight: 300;
-      letter-spacing: 0.08em;
-      color: var(--cyan);
-      text-shadow: 0 0 15px rgba(0,255,255,0.4);
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: var(--silver-white);
+      text-shadow: none;
     }
 
     .brand span {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      letter-spacing: 0.15em;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--silver-mid);
+      letter-spacing: 0.18em;
       text-transform: uppercase;
     }
 
@@ -97,14 +163,15 @@
 
     /* ── Drop Zone ── */
     .drop-zone {
-      border: 2px dashed rgba(0,255,255,0.3);
-      border-radius: 16px;
-      padding: 3rem 2rem;
+      border: 1px solid var(--border-2);
+      border-radius: 8px;
+      padding: 3.5rem 2rem;
       text-align: center;
       cursor: pointer;
-      transition: all 0.3s ease;
-      background: rgba(0, 30, 60, 0.4);
-      backdrop-filter: blur(8px);
+      transition: all 320ms cubic-bezier(.22,.61,.36,1);
+      background: rgba(14, 43, 54, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       position: relative;
       overflow: hidden;
     }
@@ -113,67 +180,179 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: radial-gradient(ellipse at center, rgba(0,255,255,0.03) 0%, transparent 70%);
+      background: radial-gradient(ellipse at center, rgba(63,212,224,0.04) 0%, transparent 70%);
       pointer-events: none;
     }
 
     .drop-zone:hover, .drop-zone.drag-over {
-      border-color: var(--cyan);
-      background: rgba(0, 50, 80, 0.5);
-      box-shadow: 0 0 30px rgba(0,255,255,0.15), inset 0 0 30px rgba(0,255,255,0.05);
+      border-color: var(--border-3);
+      background: rgba(18, 56, 68, 0.7);
+      box-shadow: 0 0 32px rgba(63,212,224,0.12), inset 0 0 40px rgba(63,212,224,0.04);
     }
 
     .drop-zone .icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      filter: drop-shadow(0 0 10px rgba(0,255,255,0.5));
+      margin-bottom: 1.2rem;
+      display: flex;
+      justify-content: center;
     }
 
     .drop-zone h2 {
-      font-size: 1.3rem;
-      font-weight: 300;
-      color: var(--cyan);
-      margin-bottom: 0.5rem;
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: var(--silver-white);
+      letter-spacing: 0.02em;
+      margin-bottom: 0.6rem;
     }
 
     .drop-zone p {
-      color: var(--text-muted);
-      font-size: 0.9rem;
+      color: var(--silver-bright);
+      font-size: 0.92rem;
     }
 
     .drop-zone input[type="file"] {
       display: none;
     }
 
-    .btn-upload {
-      display: inline-block;
-      margin-top: 1.5rem;
-      padding: 0.7rem 2rem;
-      background: linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,200,200,0.1));
-      border: 1px solid var(--cyan-dark);
+    /* Mode-Toggle (Mit Folien | Nur Text) */
+    .mode-toggle {
+      display: inline-flex;
+      gap: 0;
+      margin: 0 auto 1.6rem auto;
+      padding: 4px;
+      border: 1px solid var(--border-2);
       border-radius: 8px;
-      color: var(--cyan);
-      font-size: 0.9rem;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      transition: all 0.2s;
+      background: rgba(10, 32, 40, 0.5);
+      position: relative;
+      z-index: 2;
+    }
+    .mode-btn {
+      padding: 0.5rem 1.2rem;
+      background: transparent;
+      border: none;
+      color: var(--silver-mid);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.10em;
       text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 200ms cubic-bezier(.22,.61,.36,1);
+    }
+    .mode-btn:hover:not(.active) {
+      color: var(--silver-white);
+    }
+    .mode-btn.active {
+      background: rgba(63, 212, 224, 0.14);
+      color: var(--glow-cyan);
+      box-shadow: 0 0 14px rgba(63, 212, 224, 0.18);
+    }
+
+    .drop-zone .drop-target {
+      cursor: pointer;
+    }
+
+    .btn-upload {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 1.8rem;
+      padding: 0.75rem 1.8rem 0.75rem 0.75rem;
+      background: var(--glow-cyan);
+      border: none;
+      border-radius: 4px;
+      color: var(--ink-abyss);
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: all 200ms cubic-bezier(.22,.61,.36,1);
+      text-transform: uppercase;
+      box-shadow: 0 8px 24px rgba(63,212,224,0.18), 0 0 0 1px rgba(63,212,224,0.25);
+    }
+
+    .btn-upload img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      filter: drop-shadow(0 1px 3px rgba(6,20,25,0.4));
     }
 
     .btn-upload:hover {
-      background: rgba(0,255,255,0.2);
-      box-shadow: 0 0 15px rgba(0,255,255,0.2);
+      background: var(--glow-aqua);
+      box-shadow: 0 12px 32px rgba(63,212,224,0.35), 0 0 0 1px rgba(111,239,245,0.4);
+      transform: translateY(-1px);
     }
+
+    /* ── Drop Zone Helpers ── */
+    .drop-icon {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 22px rgba(63,212,224,0.35));
+    }
+    .drop-meta {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--silver-mid);
+      font-family: var(--font-mono);
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Header Right Cluster ── */
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    /* ── Status Pill ── */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-1);
+      background: rgba(14,43,54,0.55);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--silver-bright);
+    }
+    .status-pill .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--silver-mid);
+      box-shadow: 0 0 6px var(--silver-mid);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .status-pill[data-state="ok"] .status-dot {
+      background: var(--signal-ok);
+      box-shadow: 0 0 8px rgba(111,239,199,0.6);
+    }
+    .status-pill[data-state="error"] .status-dot {
+      background: var(--signal-alert);
+      box-shadow: 0 0 8px rgba(240,138,122,0.6);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .status-pill[data-state="ok"] { color: var(--signal-ok); border-color: rgba(111,239,199,0.25); }
+    .status-pill[data-state="error"] { color: var(--signal-alert); border-color: rgba(240,138,122,0.35); }
 
     /* ── Progress Panel ── */
     .progress-panel {
       display: none;
       margin-top: 2rem;
       background: var(--navy-card);
-      border: 1px solid rgba(0,255,255,0.15);
-      border-radius: 16px;
+      border: 1px solid var(--border-1);
+      border-radius: 8px;
       padding: 2rem;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .progress-panel.visible { display: block; }
@@ -186,30 +365,43 @@
     }
 
     .progress-header h3 {
-      color: var(--cyan);
-      font-weight: 300;
-      font-size: 1.1rem;
+      font-family: var(--font-display);
+      color: var(--silver-white);
+      font-weight: 400;
+      font-size: 1.3rem;
+      letter-spacing: 0.02em;
     }
 
     .progress-pct {
-      color: var(--gold);
-      font-size: 1.3rem;
-      font-weight: 600;
+      color: var(--glow-cyan);
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.05em;
+    }
+
+    .progress-msg {
+      margin-top: 0.8rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--silver-bright);
+      letter-spacing: 0.04em;
     }
 
     .progress-bar-bg {
       height: 6px;
-      background: rgba(0,255,255,0.1);
+      background: rgba(63,212,224,0.10);
       border-radius: 3px;
       overflow: hidden;
     }
 
     .progress-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--cyan-dark), var(--cyan));
+      background: linear-gradient(90deg, var(--glow-faint), var(--glow-cyan));
       border-radius: 3px;
       transition: width 0.4s ease;
-      box-shadow: 0 0 10px rgba(0,255,255,0.4);
+      box-shadow: 0 0 12px rgba(63,212,224,0.45);
       width: 0%;
     }
 
@@ -224,24 +416,29 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 0.8rem;
-      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--silver-mid);
       padding: 0.4rem 0.8rem;
-      border-radius: 20px;
-      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      border: 1px solid var(--border-1);
+      background: rgba(14,43,54,0.4);
       transition: all 0.3s;
     }
 
     .step.active {
-      color: var(--cyan);
-      border-color: var(--cyan-dark);
-      background: rgba(0,255,255,0.08);
-      box-shadow: 0 0 10px rgba(0,255,255,0.1);
+      color: var(--glow-cyan);
+      border-color: var(--border-3);
+      background: rgba(63,212,224,0.08);
+      box-shadow: 0 0 12px rgba(63,212,224,0.18);
     }
 
     .step.done {
-      color: var(--gold);
-      border-color: rgba(255,215,0,0.3);
+      color: var(--signal-ok);
+      border-color: rgba(111,239,199,0.30);
+      background: rgba(111,239,199,0.06);
     }
 
     .step-dot {
@@ -278,9 +475,11 @@
     }
 
     .results-header h2 {
-      color: var(--cyan);
-      font-weight: 300;
-      font-size: 1.3rem;
+      font-family: var(--font-display);
+      color: var(--silver-white);
+      font-weight: 400;
+      font-size: 1.8rem;
+      letter-spacing: 0.02em;
     }
 
     .export-buttons {
@@ -290,68 +489,71 @@
     }
 
     .btn-export {
-      padding: 0.5rem 1.2rem;
+      padding: 0.5rem 1.1rem;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       cursor: pointer;
       transition: all 0.2s;
       text-decoration: none;
-      border: 1px solid;
-      letter-spacing: 0.03em;
+      border: 1px solid rgba(63,212,224,0.35);
+      background: rgba(63,212,224,0.08);
+      color: var(--glow-cyan);
     }
 
-    .btn-html  { color: #61dafb; border-color: rgba(97,218,251,0.4); background: rgba(97,218,251,0.08); }
-    .btn-md    { color: #c792ea; border-color: rgba(199,146,234,0.4); background: rgba(199,146,234,0.08); }
-    .btn-pdf   { color: var(--gold); border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.08); }
-    .btn-docx  { color: #56b6c2; border-color: rgba(86,182,194,0.4); background: rgba(86,182,194,0.08); }
-
     .btn-export:hover {
-      filter: brightness(1.2);
-      box-shadow: 0 0 12px rgba(255,255,255,0.1);
+      background: rgba(63,212,224,0.18);
+      box-shadow: 0 0 16px rgba(63,212,224,0.25);
+      color: var(--glow-aqua);
     }
 
     /* ── Transcript ── */
     .transcript-container {
       background: var(--navy-card);
-      border: 1px solid rgba(0,255,255,0.12);
-      border-radius: 16px;
+      border: 1px solid var(--border-1);
+      border-radius: 8px;
       padding: 1.5rem;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       max-height: 65vh;
       overflow-y: auto;
     }
 
     .transcript-container::-webkit-scrollbar { width: 6px; }
-    .transcript-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-    .transcript-container::-webkit-scrollbar-thumb { background: rgba(0,255,255,0.2); border-radius: 3px; }
+    .transcript-container::-webkit-scrollbar-track { background: rgba(6,20,25,0.4); }
+    .transcript-container::-webkit-scrollbar-thumb { background: rgba(63,212,224,0.20); border-radius: 3px; }
 
     .segment {
       display: flex;
       gap: 1rem;
       padding: 0.9rem 1rem;
       margin-bottom: 0.5rem;
-      border-radius: 10px;
+      border-radius: 8px;
       align-items: flex-start;
       transition: background 0.2s;
     }
 
-    .segment:hover { background: rgba(0,255,255,0.04); }
+    .segment:hover { background: rgba(63,212,224,0.04); }
 
     .segment.speech {
-      border-left: 3px solid rgba(0,204,204,0.5);
-      background: rgba(0,20,40,0.6);
+      border-left: 3px solid var(--glow-faint);
+      background: rgba(14,43,54,0.50);
     }
 
     .segment.silence {
-      border-left: 3px solid var(--silence);
-      background: rgba(40,10,0,0.5);
+      border-left: 3px solid var(--signal-alert);
+      background: rgba(240,138,122,0.06);
     }
 
     .seg-time {
-      color: var(--cyan-dark);
-      font-size: 0.78rem;
+      color: var(--glow-faint);
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      letter-spacing: 0.05em;
       white-space: nowrap;
-      min-width: 70px;
+      min-width: 80px;
       padding-top: 2px;
       font-variant-numeric: tabular-nums;
     }
@@ -364,9 +566,10 @@
     }
 
     .segment.silence .seg-text {
-      color: var(--silence);
-      font-style: italic;
-      font-size: 0.88rem;
+      color: var(--signal-alert);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
     }
 
     .seg-slide {
@@ -376,14 +579,14 @@
     .seg-slide img {
       max-width: 220px;
       border-radius: 8px;
-      border: 1px solid rgba(0,204,204,0.25);
+      border: 1px solid var(--border-2);
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .seg-slide img:hover {
-      border-color: var(--cyan);
-      box-shadow: 0 0 15px rgba(0,255,255,0.2);
+      border-color: var(--border-3);
+      box-shadow: 0 0 18px rgba(63,212,224,0.25);
       transform: scale(1.02);
     }
 
@@ -398,26 +601,36 @@
     .stat-card {
       flex: 1;
       min-width: 120px;
-      background: rgba(0,20,40,0.6);
-      border: 1px solid rgba(0,255,255,0.12);
-      border-radius: 10px;
+      background: rgba(14,43,54,0.55);
+      border: 1px solid var(--border-1);
+      border-radius: 8px;
       padding: 1rem;
       text-align: center;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
 
     .stat-value {
-      font-size: 1.6rem;
-      font-weight: 600;
-      color: var(--cyan);
-      text-shadow: 0 0 10px rgba(0,255,255,0.3);
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--glow-cyan);
+      letter-spacing: 0.02em;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 14px rgba(63,212,224,0.35);
     }
 
+    .stat-value.is-alert { color: var(--signal-alert); text-shadow: 0 0 12px rgba(240,138,122,0.35); }
+    .stat-value.is-warn  { color: var(--signal-warn);  text-shadow: 0 0 12px rgba(245,201,122,0.35); }
+    .stat-value.is-mono  { font-family: var(--font-mono); font-size: 1.4rem; letter-spacing: 0.1em; }
+
     .stat-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--silver-mid);
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-top: 0.2rem;
+      letter-spacing: 0.12em;
+      margin-top: 0.3rem;
     }
 
     /* ── Lightbox ── */
@@ -425,10 +638,12 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.85);
+      background: rgba(6,20,25,0.88);
       z-index: 1000;
       align-items: center;
       justify-content: center;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
 
     .lightbox.open { display: flex; }
@@ -436,26 +651,99 @@
     .lightbox img {
       max-width: 90vw;
       max-height: 90vh;
-      border-radius: 10px;
-      border: 1px solid var(--cyan-dark);
-      box-shadow: 0 0 40px rgba(0,255,255,0.2);
+      border-radius: 8px;
+      border: 1px solid var(--border-3);
+      box-shadow: 0 0 48px rgba(63,212,224,0.25);
     }
 
     .lightbox-close {
       position: absolute;
       top: 1.5rem;
       right: 1.5rem;
-      color: var(--text);
+      color: var(--silver-white);
+      font-family: var(--font-mono);
       font-size: 2rem;
       cursor: pointer;
       line-height: 1;
+    }
+
+    /* ── Mini Buttons (Header: Reset / Eject) ── */
+    .btn-mini {
+      background: rgba(63,212,224,0.08);
+      border: 1px solid rgba(63,212,224,0.35);
+      color: var(--glow-cyan);
+      font-family: var(--font-mono);
+      padding: 0.35rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-mini[hidden] { display: none; }
+    .btn-mini:hover { background: rgba(63,212,224,0.18); box-shadow: 0 0 12px rgba(63,212,224,0.25); color: var(--glow-aqua); }
+    .btn-mini-danger {
+      color: var(--signal-alert);
+      border-color: rgba(240,138,122,0.4);
+      background: rgba(240,138,122,0.08);
+    }
+    .btn-mini-danger:hover { background: rgba(240,138,122,0.18); box-shadow: 0 0 12px rgba(240,138,122,0.25); color: var(--signal-alert); }
+
+    /* ── Cancel Button (Progress) ── */
+    .btn-cancel {
+      margin-top: 1rem;
+      background: rgba(240,138,122,0.08);
+      border: 1px solid rgba(240,138,122,0.4);
+      color: var(--signal-alert);
+      font-family: var(--font-mono);
+      padding: 0.5rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-cancel:hover { background: rgba(240,138,122,0.18); box-shadow: 0 0 16px rgba(240,138,122,0.25); }
+
+    /* Banner (Toast) für Fehler */
+    .banner {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(14,43,54,0.92);
+      border: 1px solid rgba(240,138,122,0.45);
+      border-left: 3px solid var(--signal-alert);
+      color: var(--silver-white);
+      font-family: var(--font-mono);
+      padding: 0.8rem 1.4rem;
+      border-radius: 8px;
+      z-index: 2000;
+      max-width: 90vw;
+      box-shadow: 0 0 28px rgba(240,138,122,0.25);
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* ── Focus Visible (A11y) ── */
+    :focus-visible {
+      outline: 2px solid var(--glow-cyan);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .btn-upload:focus-visible {
+      outline-offset: 3px;
     }
 
     /* ── Responsive ── */
     @media (max-width: 600px) {
       main { padding: 1rem; }
       .steps { gap: 0.5rem; }
-      .step { font-size: 0.7rem; padding: 0.3rem 0.6rem; }
+      .step { font-size: 0.65rem; padding: 0.3rem 0.6rem; }
     }
   </style>
 </head>
@@ -466,33 +754,36 @@
 <div class="app">
   <header>
     <div class="logo-star">
-      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#c0c8d0"/>
-            <stop offset="50%" style="stop-color:#e8eef4"/>
-            <stop offset="100%" style="stop-color:#8090a0"/>
-          </linearGradient>
-        </defs>
-        <polygon points="50,5 55,45 95,50 55,55 50,95 45,55 5,50 45,45"
-                 fill="url(#starGrad)" stroke="rgba(0,255,255,0.3)" stroke-width="0.5"/>
-      </svg>
+      <img src="/logo-monogram.png" alt="NeuralNautic">
     </div>
     <div class="brand">
       <h1>NeuralNautic</h1>
       <span>Transcriptor</span>
     </div>
+    <div class="header-right">
+      <div id="serverStatus" class="status-pill" data-state="loading">
+        <span class="status-dot"></span><span class="status-label">Server</span>
+      </div>
+      <button id="btnReset" class="btn-mini" title="UI zurücksetzen" hidden>↻ Reset</button>
+      <button id="btnEject" class="btn-mini btn-mini-danger" title="Server stoppen">⏻ Eject</button>
+    </div>
   </header>
 
   <main>
     <!-- Drop Zone -->
-    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <div class="icon">🎬</div>
-      <h2>Screenrecording hochladen</h2>
-      <p>MP4-Datei hier ablegen oder klicken zum Auswählen</p>
-      <p style="margin-top:0.5rem;font-size:0.8rem;color:rgba(160,180,200,0.6)">Whisper · FFmpeg · OpenCV — 100% lokal</p>
-      <button class="btn-upload">Datei auswählen</button>
-      <input type="file" id="fileInput" accept="video/mp4,video/*">
+    <div class="drop-zone" id="dropZone">
+      <div class="mode-toggle" role="tablist" aria-label="Modus">
+        <button type="button" class="mode-btn active" data-mode="full" role="tab" aria-selected="true">Mit Folien</button>
+        <button type="button" class="mode-btn" data-mode="text_only" role="tab" aria-selected="false">Nur Text</button>
+      </div>
+      <div class="drop-target" id="dropTarget" onclick="document.getElementById('fileInput').click()">
+        <div class="icon"><img class="drop-icon" src="/logo-monogram.png" alt=""></div>
+        <h2 id="dropTitle">Screenrecording hochladen</h2>
+        <p id="dropCaption">MP4-Datei hier ablegen oder klicken zum Auswählen</p>
+        <p class="drop-meta" id="dropMeta">Whisper · FFmpeg · OpenCV — 100% lokal · Mit Folien-Erkennung</p>
+        <button class="btn-upload"><img src="/logo-star.png" alt="">Datei auswählen</button>
+        <input type="file" id="fileInput" accept="video/mp4,video/*,audio/*">
+      </div>
     </div>
 
     <!-- Progress -->
@@ -504,14 +795,14 @@
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="progressBar"></div>
       </div>
-      <p style="margin-top:0.8rem;font-size:0.85rem;color:var(--text-muted)" id="progressMsg"></p>
+      <p class="progress-msg" id="progressMsg"></p>
       <div class="steps">
         <div class="step" id="step-audio"><span class="step-dot"></span>Audio</div>
-        <div class="step" id="step-silence"><span class="step-dot"></span>Stille</div>
         <div class="step" id="step-slides"><span class="step-dot"></span>Folien</div>
         <div class="step" id="step-transcribe"><span class="step-dot"></span>Transkription</div>
         <div class="step" id="step-export"><span class="step-dot"></span>Export</div>
       </div>
+      <button id="btnCancel" class="btn-cancel">× Abbrechen</button>
     </div>
 
     <!-- Results -->
@@ -541,8 +832,8 @@
   const ctx = canvas.getContext('2d');
   let nodes = [];
   let W, H;
-  const NODE_COUNT = 60;
-  const MAX_DIST = 160;
+  const NODE_COUNT = 90;
+  const MAX_DIST   = 200;
 
   function resize() {
     W = canvas.width = window.innerWidth;
@@ -555,8 +846,8 @@
       nodes.push({
         x: Math.random() * W,
         y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
+        vx: (Math.random() - 0.5) * 0.55,
+        vy: (Math.random() - 0.5) * 0.55,
         r: Math.random() * 2 + 1,
         pulse: Math.random() * Math.PI * 2
       });
@@ -566,13 +857,13 @@
   // Signal-Animationen auf Verbindungen
   let signals = [];
   function spawnSignal() {
-    if (signals.length > 12) return;
+    if (signals.length > 22) return;
     const a = Math.floor(Math.random() * nodes.length);
     const b = Math.floor(Math.random() * nodes.length);
     const dx = nodes[b].x - nodes[a].x;
     const dy = nodes[b].y - nodes[a].y;
     if (Math.hypot(dx, dy) < MAX_DIST) {
-      signals.push({ from: a, to: b, t: 0, speed: 0.008 + Math.random() * 0.012 });
+      signals.push({ from: a, to: b, t: 0, speed: 0.014 + Math.random() * 0.014 });
     }
   }
 
@@ -586,9 +877,9 @@
         const dy = nodes[i].y - nodes[j].y;
         const dist = Math.hypot(dx, dy);
         if (dist < MAX_DIST) {
-          const alpha = (1 - dist / MAX_DIST) * 0.18;
-          ctx.strokeStyle = `rgba(0,200,200,${alpha})`;
-          ctx.lineWidth = 0.6;
+          const alpha = (1 - dist / MAX_DIST) * 0.25;
+          ctx.strokeStyle = `rgba(45,138,154,${alpha})`;
+          ctx.lineWidth = 0.7;
           ctx.beginPath();
           ctx.moveTo(nodes[i].x, nodes[i].y);
           ctx.lineTo(nodes[j].x, nodes[j].y);
@@ -604,19 +895,19 @@
       const sx = a.x + (b.x - a.x) * sig.t;
       const sy = a.y + (b.y - a.y) * sig.t;
       ctx.beginPath();
-      ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(0,255,255,${0.8 * (1 - Math.abs(sig.t - 0.5) * 2)})`;
+      ctx.arc(sx, sy, 2.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(63,212,224,${0.9 * (1 - Math.abs(sig.t - 0.5) * 2)})`;
       ctx.fill();
       sig.t += sig.speed;
     }
 
     // Neuronen
     for (const n of nodes) {
-      n.pulse += 0.02;
-      const glow = 0.4 + 0.3 * Math.sin(n.pulse);
+      n.pulse += 0.035;
+      const glow = 0.5 + 0.4 * Math.sin(n.pulse);
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r + 0.5, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(0,220,220,${glow})`;
+      ctx.fillStyle = `rgba(63,212,224,${glow})`;
       ctx.fill();
 
       // Bewegen
@@ -626,7 +917,7 @@
       if (n.y < 0 || n.y > H) n.vy *= -1;
     }
 
-    if (Math.random() < 0.04) spawnSignal();
+    if (Math.random() < 0.10) spawnSignal();
     requestAnimationFrame(draw);
   }
 
@@ -640,9 +931,59 @@
 // ── Upload & Processing ──────────────────────────────────────────────────────
 let currentJobId = null;
 let pollInterval = null;
+let pollFailCount = 0;
+let uploadMode = 'full';   // 'full' | 'text_only'
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
+
+// ── Mode-Toggle ──────────────────────────────────────────────────────────────
+(function setupModeToggle() {
+  const btns       = document.querySelectorAll('.mode-btn');
+  const dropTitle  = document.getElementById('dropTitle');
+  const dropCap    = document.getElementById('dropCaption');
+  const dropMeta   = document.getElementById('dropMeta');
+  const slidesPill = document.getElementById('step-slides');
+
+  function applyMode(mode) {
+    uploadMode = mode;
+    btns.forEach(b => {
+      const on = b.dataset.mode === mode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (mode === 'text_only') {
+      dropTitle.textContent = 'Audio/Video transkribieren';
+      dropCap.textContent   = 'Datei hier ablegen oder klicken — reine Whisper-Transkription';
+      dropMeta.textContent  = 'Whisper · 100% lokal · Nur-Text-Modus';
+      if (slidesPill) slidesPill.style.display = 'none';
+    } else {
+      dropTitle.textContent = 'Screenrecording hochladen';
+      dropCap.textContent   = 'MP4-Datei hier ablegen oder klicken zum Auswählen';
+      dropMeta.textContent  = 'Whisper · FFmpeg · OpenCV — 100% lokal · Mit Folien-Erkennung';
+      if (slidesPill) slidesPill.style.display = '';
+    }
+  }
+
+  btns.forEach(b => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    applyMode(b.dataset.mode);
+  }));
+})();
+
+// Toast / Banner für Fehler
+function banner(msg, ms = 6000) {
+  let el = document.getElementById('errBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'errBanner';
+    el.className = 'banner';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.remove(), ms);
+}
 
 // Drag & Drop
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
@@ -656,28 +997,69 @@ dropZone.addEventListener('drop', e => {
 
 fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+  // Reset, damit die selbe Datei nochmal ausgewählt werden kann
+  fileInput.value = '';
 });
 
 async function uploadFile(file) {
+  // Server vor Upload kurz pingen — bei "Connection refused" sofort sauberer Hinweis
+  try {
+    const ping = await fetch('/health', { method: 'GET', cache: 'no-store' });
+    if (!ping.ok) throw new Error('Server antwortet nicht (HTTP ' + ping.status + ')');
+  } catch (e) {
+    banner('Backend nicht erreichbar — läuft start.bat? ' + e.message);
+    return;
+  }
+
   document.getElementById('progressPanel').classList.add('visible');
+  document.getElementById('progressTitle').textContent = 'Verarbeite...';
+  document.getElementById('btnCancel').hidden = false;
+  document.getElementById('btnReset').hidden = true;
   document.getElementById('results').classList.remove('visible');
-  setProgress(5, 'Lade hoch...', 'start');
+  setProgress(2, `Lade ${file.name} hoch (${(file.size/1024/1024).toFixed(1)} MB)...`, null);
+
+  // XHR statt fetch — damit wir echten Upload-Fortschritt zeigen können
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/upload');
+  xhr.upload.onprogress = (e) => {
+    if (!e.lengthComputable) return;
+    const pct = Math.min(8, Math.round((e.loaded / e.total) * 8)); // Upload = 0..8 %
+    setProgress(pct, `Upload ${(e.loaded/1024/1024).toFixed(1)} / ${(e.total/1024/1024).toFixed(1)} MB`, null);
+  };
+  xhr.onload = () => {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        currentJobId = data.job_id;
+        startPolling();
+      } catch (err) {
+        banner('Server-Antwort konnte nicht gelesen werden: ' + err.message);
+      }
+    } else {
+      banner(`Upload fehlgeschlagen (HTTP ${xhr.status}): ${xhr.responseText || 'keine Antwort'}`);
+      document.getElementById('progressTitle').textContent = '× Upload-Fehler';
+    }
+  };
+  xhr.onerror = () => {
+    banner('Netzwerkfehler beim Upload. Backend abgestürzt? Konsole prüfen.');
+    document.getElementById('progressTitle').textContent = '× Netzwerkfehler';
+  };
+  xhr.onabort = () => {
+    document.getElementById('progressTitle').textContent = '× Abgebrochen';
+  };
 
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('mode', uploadMode);
+  xhr.send(formData);
 
-  try {
-    const res = await fetch('/upload', { method: 'POST', body: formData });
-    const data = await res.json();
-    currentJobId = data.job_id;
-    startPolling();
-  } catch (e) {
-    setProgress(0, 'Fehler beim Upload: ' + e.message, 'error');
-  }
+  // merken, damit Cancel den Upload kappen kann
+  window._uploadXhr = xhr;
 }
 
 function startPolling() {
   if (pollInterval) clearInterval(pollInterval);
+  pollFailCount = 0;
   pollInterval = setInterval(pollStatus, 1500);
 }
 
@@ -685,39 +1067,121 @@ async function pollStatus() {
   if (!currentJobId) return;
   try {
     const res = await fetch(`/status/${currentJobId}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const job = await res.json();
+    pollFailCount = 0;
     setProgress(job.progress, job.message, job.step);
     if (job.status === 'done') {
       clearInterval(pollInterval);
+      document.getElementById('btnCancel').hidden = true;
       showResults(job.data);
-    } else if (job.status === 'error') {
+    } else if (job.status === 'error' || job.status === 'cancelled') {
       clearInterval(pollInterval);
-      document.getElementById('progressTitle').textContent = '❌ Fehler';
-      document.getElementById('progressMsg').textContent = job.message;
+      document.getElementById('btnCancel').hidden = true;
+      document.getElementById('btnReset').hidden = false;
+      document.getElementById('progressTitle').textContent =
+        job.status === 'cancelled' ? '× Abgebrochen' : '× Fehler';
+      document.getElementById('progressMsg').textContent = job.message || '';
     }
-  } catch(e) {}
+  } catch (e) {
+    pollFailCount++;
+    if (pollFailCount >= 5) {
+      clearInterval(pollInterval);
+      banner('Status-Abruf fehlgeschlagen — Verbindung zum Backend verloren.');
+      document.getElementById('btnReset').hidden = false;
+    }
+  }
 }
 
-const STEP_ORDER = ['audio', 'silence', 'slides', 'transcribe', 'export'];
+const STEP_ORDER = ['audio', 'slides', 'transcribe', 'export'];
 
 function setProgress(pct, msg, step) {
   document.getElementById('progressBar').style.width = pct + '%';
   document.getElementById('progressPct').textContent = pct + '%';
   document.getElementById('progressMsg').textContent = msg || '';
 
+  if (!step) return; // Upload-Phase: keine Step-Marker setzen
   STEP_ORDER.forEach(s => {
     const el = document.getElementById('step-' + s);
     if (!el) return;
     el.classList.remove('active', 'done');
     const idx = STEP_ORDER.indexOf(s);
     const curIdx = STEP_ORDER.indexOf(step);
+    if (curIdx < 0) return;
     if (idx < curIdx) el.classList.add('done');
     else if (idx === curIdx) el.classList.add('active');
   });
 }
 
+// ── Reset / Cancel / Eject ───────────────────────────────────────────────────
+function resetUI() {
+  if (pollInterval) clearInterval(pollInterval);
+  currentJobId = null;
+  document.getElementById('progressPanel').classList.remove('visible');
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('btnReset').hidden = true;
+  document.getElementById('btnCancel').hidden = true;
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('progressPct').textContent = '0%';
+  document.getElementById('progressMsg').textContent = '';
+  document.getElementById('progressTitle').textContent = 'Verarbeite...';
+  STEP_ORDER.forEach(s => {
+    const el = document.getElementById('step-' + s);
+    if (el) el.classList.remove('active', 'done');
+  });
+}
+
+document.getElementById('btnReset').addEventListener('click', resetUI);
+
+document.getElementById('btnCancel').addEventListener('click', async () => {
+  if (window._uploadXhr && window._uploadXhr.readyState !== 4) {
+    window._uploadXhr.abort();
+  }
+  if (currentJobId) {
+    try { await fetch(`/cancel/${currentJobId}`, { method: 'POST' }); } catch(e){}
+  }
+  if (pollInterval) clearInterval(pollInterval);
+  document.getElementById('btnCancel').hidden = true;
+  document.getElementById('btnReset').hidden = false;
+  document.getElementById('progressTitle').textContent = '× Abgebrochen';
+  document.getElementById('progressMsg').textContent = 'Job wurde abgebrochen.';
+});
+
+document.getElementById('btnEject').addEventListener('click', async () => {
+  if (!confirm('Server wirklich stoppen? Du musst start.bat danach neu starten.')) return;
+  try {
+    await fetch('/shutdown', { method: 'POST' });
+  } catch(e) { /* server stirbt mid-request — erwartet */ }
+  setServerStatus('error', 'Server gestoppt');
+  banner('Server wurde gestoppt. Fenster schließen und start.bat neu starten.', 15000);
+});
+
+// ── Server Status Pill ───────────────────────────────────────────────────────
+function setServerStatus(state, label) {
+  const pill = document.getElementById('serverStatus');
+  if (!pill) return;
+  pill.setAttribute('data-state', state);
+  const labelEl = pill.querySelector('.status-label');
+  if (labelEl) labelEl.textContent = label;
+}
+
+// Health-Check beim Laden + alle 10s
+async function checkHealth() {
+  try {
+    const r = await fetch('/health', { cache: 'no-store' });
+    if (r.ok) setServerStatus('ok', 'Server bereit');
+    else setServerStatus('error', 'Server-Fehler');
+  } catch (e) {
+    setServerStatus('error', 'Server offline');
+  }
+}
+checkHealth();
+setInterval(checkHealth, 10000);
+
 function showResults(data) {
-  document.getElementById('progressTitle').textContent = '✓ Abgeschlossen';
+  document.getElementById('progressTitle').textContent = '▸▸ Abgeschlossen';
+  document.getElementById('btnCancel').hidden = true;
+  document.getElementById('btnReset').hidden = false;
 
   const results = document.getElementById('results');
   results.classList.add('visible');
@@ -731,29 +1195,39 @@ function showResults(data) {
       <div class="stat-label">Segmente</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" style="color:var(--silence)">${silenceSegs}</div>
+      <div class="stat-value is-alert">${silenceSegs}</div>
       <div class="stat-label">Stille</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" style="color:var(--gold)">${data.slides.length}</div>
+      <div class="stat-value">${data.slides.length}</div>
       <div class="stat-label">Folien</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" style="font-size:1.2rem">${data.language?.toUpperCase() || '?'}</div>
+      <div class="stat-value is-mono">${data.language?.toUpperCase() || '?'}</div>
       <div class="stat-label">Sprache</div>
     </div>
   `;
 
-  // Export Buttons
+  // Export Buttons (Klassen behalten für JS-Selektor-Kompatibilität, CSS-Farben kommen aus .btn-export)
   const formats = [
     { key: 'html', label: 'HTML', cls: 'btn-html' },
     { key: 'md',   label: 'Markdown', cls: 'btn-md' },
     { key: 'pdf',  label: 'PDF', cls: 'btn-pdf' },
     { key: 'docx', label: 'Word', cls: 'btn-docx' },
+    { key: 'json', label: 'JSON', cls: 'btn-json' },
   ];
-  document.getElementById('exportButtons').innerHTML = formats.map(f =>
-    `<a class="btn-export ${f.cls}" href="/download/${currentJobId}/${f.key}" download>⬇ ${f.label}</a>`
+  // pywebview/WebView2 ignoriert <a download> oft — daher Fetch+Blob-Trick.
+  const dlButtons = formats.map(f =>
+    `<button class="btn-export ${f.cls}" data-fmt="${f.key}" data-label="${f.label}">↓ ${f.label}</button>`
   ).join('');
+  // Plus "Ordner oeffnen" wenn pywebview-API verfuegbar (Desktop-Modus)
+  const openFolderBtn = `<button class="btn-export" id="btnOpenFolder" title="Ordner im Explorer oeffnen">📁 Ordner</button>`;
+  document.getElementById('exportButtons').innerHTML = dlButtons + openFolderBtn;
+
+  document.querySelectorAll('#exportButtons .btn-export[data-fmt]').forEach(btn => {
+    btn.addEventListener('click', () => downloadFile(btn.dataset.fmt, btn.dataset.label));
+  });
+  document.getElementById('btnOpenFolder').addEventListener('click', openJobFolder);
 
   // Transcript
   const container = document.getElementById('transcriptContainer');
@@ -765,7 +1239,7 @@ function showResults(data) {
     if (seg.type === 'silence') {
       return `<div class="segment silence">
         <span class="seg-time">${seg.start_fmt}–${seg.end_fmt}</span>
-        <div class="seg-content"><span class="seg-text">⚠ ${seg.text}</span>${slideHtml}</div>
+        <div class="seg-content"><span class="seg-text">~ ${seg.text}</span>${slideHtml}</div>
       </div>`;
     }
     return `<div class="segment speech">
@@ -782,6 +1256,50 @@ function openLightbox(src) {
 }
 function closeLightbox() {
   document.getElementById('lightbox').classList.remove('open');
+}
+
+// ── Download via Fetch+Blob (WebView2-kompatibel) ────────────────────────────
+async function downloadFile(format, label) {
+  if (!currentJobId) { banner('Kein aktiver Job.'); return; }
+  try {
+    const res = await fetch(`/download/${currentJobId}/${format}`);
+    if (!res.ok) {
+      banner(`Download fehlgeschlagen: HTTP ${res.status}`);
+      return;
+    }
+    const blob = await res.blob();
+    const cd = res.headers.get('content-disposition') || '';
+    const m = cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+    const filename = m ? decodeURIComponent(m[1]) : `transcript.${format}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  } catch (e) {
+    banner('Download-Fehler: ' + e.message);
+  }
+}
+
+async function openJobFolder() {
+  if (!currentJobId) { banner('Kein aktiver Job.'); return; }
+  // pywebview-API (Desktop-App) → oeffnet den Ordner im Explorer
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.open_job_folder) {
+    try {
+      await window.pywebview.api.open_job_folder(currentJobId);
+      return;
+    } catch (e) {
+      banner('Ordner konnte nicht geoeffnet werden: ' + e.message);
+      return;
+    }
+  }
+  banner('Ordner-Oeffnen nur in der Desktop-App verfuegbar.');
 }
 </script>
 </body>
