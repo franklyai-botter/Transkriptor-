@@ -28,7 +28,7 @@ if _ffmpeg_dir not in os.environ.get("PATH", ""):
     os.environ["PATH"] = _ffmpeg_dir + os.pathsep + os.environ.get("PATH", "")
 
 import numpy as np
-import whisper
+from faster_whisper import WhisperModel
 import anthropic
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
@@ -58,20 +58,28 @@ WORK_DIR.mkdir(exist_ok=True)
 # Jobs status speichern
 jobs: dict = {}
 
-# Whisper Modelle (lazy geladen). Es bleibt immer nur EIN Modell im RAM —
-# beim Wechsel wird neu geladen (nach dem ersten Download aus dem Disk-Cache, schnell).
+# Whisper Modelle via faster-whisper (CTranslate2) — ~3-4x schneller als openai-whisper
+# auf CPU bei gleicher Qualitaet. Es bleibt immer nur EIN Modell im RAM; beim Wechsel
+# wird neu geladen (nach dem ersten Download aus dem Disk-Cache, schnell).
 ALLOWED_WHISPER_MODELS = ("tiny", "base", "small", "medium", "large")
 DEFAULT_WHISPER_MODEL = "large"
+# Mapping auf die faster-whisper-Repo-IDs; "large" -> large-v3 (beste Qualitaet)
+_FW_MODEL_ID = {
+    "tiny": "tiny", "base": "base", "small": "small",
+    "medium": "medium", "large": "large-v3",
+}
 _whisper_cache = {"name": None, "model": None}
 
 def get_whisper_model(model_name: str = DEFAULT_WHISPER_MODEL):
     if model_name not in ALLOWED_WHISPER_MODELS:
         model_name = DEFAULT_WHISPER_MODEL
     if _whisper_cache["name"] != model_name:
-        print(f"[Whisper] Lade Modell: {model_name} (erster Download kann dauern)", flush=True)
-        _whisper_cache["model"] = whisper.load_model(model_name)
+        fw_id = _FW_MODEL_ID[model_name]
+        print(f"[Whisper] Lade faster-whisper Modell: {fw_id} (erster Download kann dauern)", flush=True)
+        # int8 = schnell + speichersparend auf CPU
+        _whisper_cache["model"] = WhisperModel(fw_id, device="cpu", compute_type="int8")
         _whisper_cache["name"] = model_name
-        print(f"[Whisper] Modell geladen: {model_name}", flush=True)
+        print(f"[Whisper] Modell geladen: {fw_id}", flush=True)
     return _whisper_cache["model"]
 
 
@@ -281,33 +289,24 @@ def analyze_frame(image_path: Path) -> dict:
 # ── Transkription ─────────────────────────────────────────────────────────────
 
 def transcribe_audio(audio_path: Path, model_name: str = DEFAULT_WHISPER_MODEL) -> dict:
-    """Transkribiert Audio mit Whisper — lädt WAV direkt als numpy array (kein ffmpeg nötig)"""
-    import wave, struct
+    """Transkribiert Audio mit faster-whisper. Gibt ein openai-whisper-kompatibles Dict
+    zurueck (segments/language/text), damit build_transcript_data unveraendert bleibt.
+    faster-whisper dekodiert die WAV selbst (gebuendeltes PyAV) — kein ffmpeg-Aufruf noetig."""
     model = get_whisper_model(model_name)
 
-    # WAV direkt einlesen → numpy array (umgeht Whispers internen ffmpeg-Aufruf)
-    with wave.open(str(audio_path), 'rb') as wf:
-        frames = wf.readframes(wf.getnframes())
-        n_channels = wf.getnchannels()
-        sampwidth = wf.getsampwidth()
-        framerate = wf.getframerate()
+    segments_gen, info = model.transcribe(str(audio_path), language="de")
 
-    if sampwidth == 2:
-        audio_np = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
-    else:
-        audio_np = np.frombuffer(frames, dtype=np.float32)
+    segments = []
+    texts = []
+    for seg in segments_gen:  # Generator — hier laeuft die eigentliche Transkription
+        segments.append({"start": seg.start, "end": seg.end, "text": seg.text})
+        texts.append(seg.text)
 
-    # Mono
-    if n_channels > 1:
-        audio_np = audio_np.reshape(-1, n_channels).mean(axis=1)
-
-    # Whisper erwartet 16kHz
-    if framerate != 16000:
-        import whisper.audio as wa
-        audio_np = wa.resample(audio_np, framerate, 16000)
-
-    result = model.transcribe(audio_np, language="de", verbose=False)
-    return result
+    return {
+        "segments": segments,
+        "language": info.language,
+        "text": "".join(texts),
+    }
 
 
 # ── Export-Funktionen ─────────────────────────────────────────────────────────
