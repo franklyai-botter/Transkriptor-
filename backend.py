@@ -801,6 +801,21 @@ def run_job(job_id: str, video_path: Path):
             json.dumps(transcript_data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
+        # ── Zwischenprodukt aufraeumen ───────────────────────────────────
+        # audio.wav wird nur von detect_silence() und transcribe_audio() gelesen, beide
+        # sind hier durch. Ohne dieses Loeschen bleibt je Job eine WAV von 80-370 MB
+        # liegen: am 2026-08-02 waren es 39 Stueck / 7,2 GB, und der Ordner waechst mit
+        # jedem Lauf weiter. Verlustfrei, weil extract_audio() sie am Anfang jedes Jobs
+        # aus dem Video neu erzeugt.
+        #
+        # Bewusst NUR im Erfolgspfad: schlaegt ein Job fehl, bleibt die WAV fuer die
+        # Fehlersuche liegen. Und bewusst in try/except — ein gesperrtes File (Virenscanner,
+        # offener Player) darf einen fertigen Job nicht nachtraeglich auf "error" setzen.
+        try:
+            audio_path.unlink(missing_ok=True)
+        except OSError as cleanup_err:
+            print(f"[{job_id}] audio.wav nicht loeschbar: {cleanup_err}")
+
         jobs[job_id]["status"] = "done"
         jobs[job_id]["progress"] = 100
         jobs[job_id]["message"] = "Fertig!"
