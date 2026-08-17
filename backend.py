@@ -816,6 +816,22 @@ def run_job(job_id: str, video_path: Path):
         except OSError as cleanup_err:
             print(f"[{job_id}] audio.wav nicht loeschbar: {cleanup_err}")
 
+        # Dasselbe fuer das Video. /upload schreibt den Upload-Stream als Kopie in den
+        # Job-Ordner (siehe upload_video) und liess sie bisher liegen: am 2026-08-17 waren
+        # es 7 Videos / 3,4 GB, alle bytegleich zum Original in Downloads. Ab hier wird das
+        # Video nicht mehr gelesen — Audio, Folien und Exporte sind fertig.
+        #
+        # Der resolve()-Vergleich ist die Sicherung: geloescht wird nur, was wirklich im
+        # Job-Ordner liegt. Kaeme video_path je von aussen (lokaler Pfad statt Upload),
+        # waere das hier sonst ein Loeschen von Franks Originaldatei.
+        try:
+            if video_path.resolve().parent == job_dir.resolve():
+                video_path.unlink(missing_ok=True)
+            else:
+                print(f"[{job_id}] Video ausserhalb des Job-Ordners — nicht geloescht: {video_path}")
+        except OSError as cleanup_err:
+            print(f"[{job_id}] Video nicht loeschbar: {cleanup_err}")
+
         jobs[job_id]["status"] = "done"
         jobs[job_id]["progress"] = 100
         jobs[job_id]["message"] = "Fertig!"
