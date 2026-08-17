@@ -4,12 +4,14 @@ FastAPI Server: Transkription, Stille-Erkennung, Folien-Extraktion, Vision-Analy
 """
 
 import os
+import re
 import json
 import uuid
 import shutil
 import subprocess
 import tempfile
 import base64
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -57,6 +59,52 @@ WORK_DIR.mkdir(exist_ok=True)
 
 # Jobs status speichern
 jobs: dict = {}
+
+
+# ── Job-Metadaten (job.json) ──────────────────────────────────────────────────
+# Bis 2026-08-17 lag die Verknuepfung Transkript <-> Quellvideo nur in `jobs` im RAM.
+# Nach einem Serverneustart war nicht mehr feststellbar, aus welchem Video ein
+# Job-Ordner entstanden ist. Beim Aufraeumen der Downloads musste die Zuordnung
+# deshalb ueber Laufzeitvergleich (Transkript-Endzeit vs. Videodauer) geraten werden —
+# das kollidiert, sobald zwei Aufnahmen aehnlich lang sind. job.json haelt das fest.
+
+META_NAME = "job.json"
+_DURATION_RE = re.compile(r"Duration:\s*(\d+):(\d+):(\d+)\.(\d+)")
+
+
+def probe_duration(path: Path) -> Optional[float]:
+    """Laufzeit in Sekunden via FFmpeg. imageio-ffmpeg buendelt kein ffprobe, darum
+    wird die Duration-Zeile aus der ffmpeg-Ausgabe gelesen (ffmpeg schreibt sie nach
+    stderr und beendet sich mit Fehlercode, weil kein Output angegeben ist — das ist
+    hier erwartet und kein Grund zum Abbruch)."""
+    try:
+        res = subprocess.run([FFMPEG, "-i", str(path)], capture_output=True,
+                             text=True, errors="replace", timeout=180)
+        m = _DURATION_RE.search(res.stderr or "")
+        if not m:
+            return None
+        h, mi, s, cs = map(int, m.groups())
+        return h * 3600 + mi * 60 + s + cs / 100
+    except Exception as e:
+        print(f"[probe_duration] {path.name}: {e}")
+        return None
+
+
+def write_job_meta(job_dir: Path, **fields):
+    """Schreibt job.json und merged in bereits vorhandene Felder. Fehler hier duerfen
+    einen Job nie kippen — die Metadatei ist Komfort, kein Ergebnis."""
+    try:
+        path = job_dir / META_NAME
+        data = {}
+        if path.exists():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                data = {}
+        data.update(fields)
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError as e:
+        print(f"[job.json] nicht schreibbar ({job_dir.name}): {e}")
 
 # Whisper Modelle via faster-whisper (CTranslate2) — ~3-4x schneller als openai-whisper
 # auf CPU bei gleicher Qualitaet. Es bleibt immer nur EIN Modell im RAM; beim Wechsel
@@ -715,6 +763,9 @@ def run_job(job_id: str, video_path: Path):
             jobs[job_id]["progress"] = progress
             jobs[job_id]["message"] = msg
 
+        # Laufzeit jetzt messen, nicht am Ende — das Video ist dann schon geloescht.
+        write_job_meta(job_dir, duration_sec=probe_duration(video_path))
+
         # ── Q1 (0-25%): Audio + Stille ──────────────────────────────────
         update("audio", 3, "Extrahiere Audio...")
         audio_path = job_dir / "audio.wav"
@@ -832,12 +883,27 @@ def run_job(job_id: str, video_path: Path):
         except OSError as cleanup_err:
             print(f"[{job_id}] Video nicht loeschbar: {cleanup_err}")
 
+        write_job_meta(job_dir,
+                       status="done",
+                       finished_at=datetime.now().astimezone().isoformat(timespec="seconds"),
+                       segments=len(transcript_data.get("segments") or []),
+                       slides=len(slides),
+                       language=transcript_data.get("language"),
+                       video_deleted=not video_path.exists(),
+                       audio_deleted=not audio_path.exists())
+
         jobs[job_id]["status"] = "done"
         jobs[job_id]["progress"] = 100
         jobs[job_id]["message"] = "Fertig!"
         jobs[job_id]["data"] = transcript_data
 
     except Exception as e:
+        # Auch der Fehlerfall gehoert in job.json: hier bleiben Video und audio.wav
+        # liegen, und ohne Vermerk sieht so ein Ordner wie ein fertiger Job aus.
+        write_job_meta(job_dir,
+                       status="error",
+                       error=str(e),
+                       finished_at=datetime.now().astimezone().isoformat(timespec="seconds"))
         jobs[job_id]["status"] = "error"
         jobs[job_id]["message"] = str(e)
 
@@ -867,6 +933,17 @@ async def upload_video(
     with open(video_path, "wb") as f:
         content = await file.read()
         f.write(content)
+
+    # Quelle festhalten, solange das Video noch liegt — run_job loescht es am Ende.
+    # Groesse und Name sind spaeter die einzige Bruecke zurueck zur Originaldatei.
+    write_job_meta(job_dir,
+                   job_id=job_id,
+                   source_filename=file.filename,
+                   source_size_bytes=video_path.stat().st_size,
+                   mode=mode,
+                   whisper_model=whisper_model,
+                   created_at=datetime.now().astimezone().isoformat(timespec="seconds"),
+                   status="running")
 
     jobs[job_id] = {
         "id": job_id,
